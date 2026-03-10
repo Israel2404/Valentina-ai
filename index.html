@@ -581,21 +581,31 @@ async function sendMessage() {
   history.push({ role: 'user', content: text });
   addTyping();
 
+  // ══════════════════════════════════════════
+  // 🔑 PEGA TU API KEY DE GROQ AQUÍ ABAJO:
+  const GROQ_API_KEY = 'gsk_...tbvs';
+  // ══════════════════════════════════════════
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'llama-3.3-70b-versatile',
         max_tokens: 1000,
-        system: getSystemPrompt(),
-        messages: history
+        messages: [
+          { role: 'system', content: getSystemPrompt() },
+          ...history
+        ]
       })
     });
     const data = await res.json();
     removeTyping();
-    if (data.content?.[0]?.text) {
-      const reply = data.content[0].text;
+    if (data.choices?.[0]?.message?.content) {
+      const reply = data.choices[0].message.content;
       history.push({ role: 'assistant', content: reply });
       save();
       addMsgEl('ai', reply);
@@ -605,7 +615,7 @@ async function sendMessage() {
     }
   } catch {
     removeTyping();
-    addMsgEl('ai', 'No pude conectarme al sistema, ${userName}. Revisa tu conexión. 🔌');
+    addMsgEl('ai', `No pude conectarme al sistema, ${userName}. Revisa tu conexión. 🔌`);
   }
   busy = false;
   document.getElementById('sendBtn').disabled = false;
